@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <base target="_top">
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --blue: #dceef8;
+      --blue-deep: #6ea7c3;
+      --yellow: #f9e5a6;
+      --gold: #b7903f;
+      --ink: #344750;
+      --muted: #6f7b81;
+      --danger: #a64d4d;
+      --success: #367657;
+      --card: rgba(255,255,255,.9);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      padding: 18px;
+      color: var(--ink);
+      font-family: Arial, sans-serif;
+      background:
+        radial-gradient(circle at 10% 8%, rgba(249,229,166,.95), transparent 32%),
+        radial-gradient(circle at 92% 10%, rgba(220,238,248,.95), transparent 36%),
+        linear-gradient(145deg, #fffdf7, #eef8fd);
+    }
+    .shell { width: min(620px, 100%); margin: 0 auto; }
+    .header { padding: 18px 4px 12px; text-align: center; }
+    .eyebrow { margin: 0 0 7px; color: var(--gold); font-size: .72rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+    h1 { margin: 0; font-size: clamp(1.75rem, 7vw, 2.7rem); }
+    .subtitle { color: var(--muted); line-height: 1.5; }
+    .card {
+      margin: 14px 0;
+      padding: 22px;
+      border: 1px solid rgba(183,144,63,.25);
+      border-radius: 24px;
+      background: var(--card);
+      box-shadow: 0 18px 48px rgba(58,83,95,.12);
+      backdrop-filter: blur(12px);
+    }
+    label { display: grid; gap: 8px; margin-bottom: 14px; color: var(--muted); font-size: .82rem; font-weight: 700; }
+    input {
+      width: 100%;
+      min-height: 51px;
+      padding: 13px 14px;
+      border: 1px solid rgba(110,167,195,.4);
+      border-radius: 14px;
+      color: var(--ink);
+      background: #fff;
+      font: inherit;
+      font-size: 1rem;
+      outline: none;
+    }
+    input:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(183,144,63,.13); }
+    .code-input { text-transform: uppercase; letter-spacing: .08em; }
+    .button-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    button {
+      min-height: 50px;
+      flex: 1;
+      padding: 12px 18px;
+      border: 0;
+      border-radius: 999px;
+      font: inherit;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    button:disabled { cursor: wait; opacity: .6; }
+    .primary { color: #fff; background: linear-gradient(135deg, #83b7d1, #5e98b7); }
+    .secondary { color: #7b622c; border: 1px solid rgba(183,144,63,.28); background: #fffaf0; }
+    .guest-name { margin: 0 0 18px; font-size: 1.8rem; text-align: center; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .stat { min-height: 105px; padding: 15px; display: flex; flex-direction: column; justify-content: center; border-radius: 17px; background: rgba(220,238,248,.48); }
+    .stat span { color: var(--muted); font-size: .68rem; font-weight: 800; letter-spacing: .07em; text-transform: uppercase; }
+    .stat strong { margin-top: 7px; color: #416b80; font-size: 1.25rem; }
+    .status-pill { width: max-content; max-width: 100%; margin: 18px auto 0; padding: 10px 16px; border-radius: 999px; font-weight: 800; background: var(--blue); }
+    .status-pill.complete { color: #8c3f3f; background: #ffe2e2; }
+    .status-pill.partial { color: #755d26; background: #fff0bf; }
+    .status-pill.available { color: #28654a; background: #daf2e6; }
+    .checkin-box { margin-top: 20px; padding-top: 18px; border-top: 1px solid rgba(52,71,80,.1); }
+    .message { min-height: 24px; margin: 12px 0 0; text-align: center; line-height: 1.5; }
+    .message.error { color: var(--danger); }
+    .message.success { color: var(--success); font-weight: 800; }
+    .loading { opacity: .7; }
+    [hidden] { display: none !important; }
+    .privacy { margin: 14px 0 0; color: var(--muted); font-size: .72rem; line-height: 1.5; text-align: center; }
+    @media (max-width: 420px) {
+      body { padding: 10px; }
+      .card { padding: 18px; border-radius: 20px; }
+      .stats { grid-template-columns: 1fr; }
+      .stat { min-height: 86px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="header">
+      <p class="eyebrow">Baby Paulo</p>
+      <h1>Control de acceso</h1>
+      <p class="subtitle">Consulta el pase y registra únicamente a las personas que realmente ingresaron.</p>
+    </header>
+
+    <section class="card" id="accessFormCard">
+      <label>
+        Código de invitación
+        <input class="code-input" id="codeInput" type="text" autocomplete="off" placeholder="BP-XXXXXXXX">
+      </label>
+      <label>
+        PIN del personal
+        <input id="pinInput" type="password" inputmode="numeric" autocomplete="current-password" placeholder="PIN de acceso">
+      </label>
+      <div class="button-row">
+        <button class="primary" id="consultButton" type="button">Consultar invitación</button>
+      </div>
+      <p class="message" id="queryMessage" role="status" aria-live="polite"></p>
+      <p class="privacy">El PIN se conserva solo en este navegador durante la jornada. No se incluye en el QR.</p>
+    </section>
+
+    <section class="card" id="guestCard" hidden>
+      <p class="eyebrow">Invitación encontrada</p>
+      <h2 class="guest-name" id="guestName">—</h2>
+
+      <div class="stats">
+        <article class="stat"><span>Cupo autorizado</span><strong id="capacity">0</strong></article>
+        <article class="stat"><span>Personas ingresadas</span><strong id="entered">0</strong></article>
+        <article class="stat"><span>Cupo restante</span><strong id="remaining">0</strong></article>
+        <article class="stat"><span>Confirmación</span><strong id="confirmation">Pendiente</strong></article>
+      </div>
+
+      <div class="status-pill" id="statusPill">Disponible</div>
+
+      <div class="checkin-box" id="checkinBox">
+        <label>
+          ¿Cuántas personas llegan en este momento?
+          <input id="peopleInput" type="number" inputmode="numeric" min="1" step="1" value="1">
+        </label>
+        <div class="button-row">
+          <button class="primary" id="checkinButton" type="button">Registrar ingreso</button>
+          <button class="secondary" id="otherButton" type="button">Consultar otro</button>
+        </div>
+        <p class="message" id="checkinMessage" role="status" aria-live="polite"></p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    "use strict";
+
+    const INITIAL_CODE = <?!= JSON.stringify(initialCode || "") ?>;
+    const $ = (selector) => document.querySelector(selector);
+    let activeGuest = null;
+
+    function normalizeCode(value) {
+      return String(value || "")
+        .trim()
+        .toUpperCase()
+        .replace(/[^A-Z0-9-]/g, "")
+        .slice(0, 24);
+    }
+
+    function setBusy(button, busy, label) {
+      button.disabled = busy;
+      button.textContent = busy ? "Procesando…" : label;
+    }
+
+    function showMessage(element, message, type) {
+      element.textContent = message || "";
+      element.className = `message${type ? ` ${type}` : ""}`;
+    }
+
+    function classifyStatus(status) {
+      const normalized = String(status || "").toLowerCase();
+      if (normalized.includes("utilizado") || normalized.includes("no asistir")) return "complete";
+      if (normalized.includes("parcial")) return "partial";
+      return "available";
+    }
+
+    function renderGuest(response) {
+      const guest = response && response.guest;
+      if (!response || !response.ok || !guest) {
+        showMessage($("#queryMessage"), response?.message || "No fue posible consultar la invitación.", "error");
+        return;
+      }
+
+      activeGuest = guest;
+      $("#guestName").textContent = guest.invitado;
+      $("#capacity").textContent = guest.cupoAsignado;
+      $("#entered").textContent = guest.ingresaron;
+      $("#remaining").textContent = guest.cupoRestante;
+      $("#confirmation").textContent = guest.confirmacion;
+
+      const statusPill = $("#statusPill");
+      statusPill.textContent = guest.estado;
+      statusPill.className = `status-pill ${classifyStatus(guest.estado)}`;
+
+      const peopleInput = $("#peopleInput");
+      peopleInput.max = Math.max(guest.cupoRestante, 1);
+      peopleInput.value = guest.cupoRestante > 0 ? "1" : "0";
+      peopleInput.disabled = guest.cupoRestante <= 0;
+      $("#checkinButton").disabled = guest.cupoRestante <= 0;
+
+      $("#guestCard").hidden = false;
+      showMessage($("#queryMessage"), "Invitación consultada correctamente.", "success");
+      showMessage($("#checkinMessage"), guest.cupoRestante <= 0 ? "El cupo ya fue utilizado por completo." : "", guest.cupoRestante <= 0 ? "error" : "");
+      window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
+    }
+
+    function handleFailure(error, target, button, label) {
+      showMessage(target, error?.message || "Ocurrió un error inesperado.", "error");
+      setBusy(button, false, label);
+    }
+
+    function consultGuest() {
+      const button = $("#consultButton");
+      const code = normalizeCode($("#codeInput").value);
+      const pin = $("#pinInput").value;
+
+      if (!code || !pin) {
+        showMessage($("#queryMessage"), "Escribe el código y el PIN del personal.", "error");
+        return;
+      }
+
+      sessionStorage.setItem("babyPauloStaffPin", pin);
+      $("#codeInput").value = code;
+      setBusy(button, true, "Consultar invitación");
+      showMessage($("#queryMessage"), "Consultando…", "");
+
+      google.script.run
+        .withSuccessHandler((response) => {
+          setBusy(button, false, "Consultar invitación");
+          renderGuest(response);
+        })
+        .withFailureHandler((error) => handleFailure(error, $("#queryMessage"), button, "Consultar invitación"))
+        .getGuestForScanner(code, pin);
+    }
+
+    function registerEntry() {
+      if (!activeGuest) return;
+
+      const button = $("#checkinButton");
+      const count = Number.parseInt($("#peopleInput").value, 10);
+      const pin = $("#pinInput").value;
+
+      if (!Number.isFinite(count) || count < 1) {
+        showMessage($("#checkinMessage"), "Indica una cantidad válida.", "error");
+        return;
+      }
+      if (count > activeGuest.cupoRestante) {
+        showMessage($("#checkinMessage"), `Solo quedan ${activeGuest.cupoRestante} lugar(es).`, "error");
+        return;
+      }
+
+      setBusy(button, true, "Registrar ingreso");
+      showMessage($("#checkinMessage"), "Registrando acceso…", "");
+
+      google.script.run
+        .withSuccessHandler((response) => {
+          setBusy(button, false, "Registrar ingreso");
+          renderGuest(response);
+          showMessage($("#checkinMessage"), response.message, "success");
+        })
+        .withFailureHandler((error) => handleFailure(error, $("#checkinMessage"), button, "Registrar ingreso"))
+        .registerCheckIn(activeGuest.codigo, count, pin);
+    }
+
+    function resetGuest() {
+      activeGuest = null;
+      $("#guestCard").hidden = true;
+      $("#codeInput").value = "";
+      $("#codeInput").focus();
+      showMessage($("#queryMessage"), "", "");
+    }
+
+    $("#consultButton").addEventListener("click", consultGuest);
+    $("#checkinButton").addEventListener("click", registerEntry);
+    $("#otherButton").addEventListener("click", resetGuest);
+    $("#codeInput").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") consultGuest();
+    });
+    $("#pinInput").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") consultGuest();
+    });
+
+    $("#codeInput").value = INITIAL_CODE;
+    $("#pinInput").value = sessionStorage.getItem("babyPauloStaffPin") || "";
+    if (INITIAL_CODE && $("#pinInput").value) consultGuest();
+  </script>
+</body>
+</html>

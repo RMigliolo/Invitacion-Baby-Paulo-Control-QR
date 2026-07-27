@@ -588,9 +588,45 @@ p { line-height: 1.75; }
 .rsvp-section { text-align: center; }
 .rsvp-status { min-height: 24px; color: var(--gold-dark); font-size: .9rem; }
 .rsvp-status.error { color: #a85252; }
-.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; text-align: left; }
-.form-grid label { display: grid; gap: 9px; color: #5b6870; font-size: .85rem; font-weight: 600; }
-.full-field { grid-column: 1 / -1; }
+.form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 18px;
+  text-align: left;
+}
+
+.form-grid label {
+  display: grid;
+  align-content: start;
+  align-self: start;
+  gap: 9px;
+  color: #5b6870;
+  font-size: .85rem;
+  font-weight: 600;
+}
+
+.full-field {
+  grid-column: 1 / -1;
+}
+
+/*
+  En escritorio reservamos el mismo espacio para:
+  1. El título del campo
+  2. El input o select
+  3. El texto auxiliar
+*/
+@media (min-width: 761px) {
+  .form-grid > label:not(.full-field) {
+    grid-template-rows: auto 50px 16px;
+  }
+
+  .form-grid > label:not(.full-field) input,
+  .form-grid > label:not(.full-field) select {
+    height: 50px;
+    min-height: 50px;
+  }
+}
 input, select, textarea {
   width: 100%;
   border: 1px solid rgba(124,174,203,.34);

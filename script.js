@@ -12,7 +12,7 @@ const CONFIG = {
     Debe terminar en /exec. Esta misma URL atiende personalización,
     confirmaciones y la pantalla móvil de control de acceso.
   */
-  apiEndpoint: "PEGA_AQUI_LA_URL_DE_APPS_SCRIPT"
+  apiEndpoint: "https://script.google.com/macros/s/AKfycbxEBGgYQFfmboWXpfp9Xiro_zJE2h44g_apJc9OxgghEfxb8lwaYef7NFNX7hBDOz82/exec"
 };
 
 const $ = (selector, context = document) => context.querySelector(selector);

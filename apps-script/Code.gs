@@ -46,6 +46,7 @@ function onOpen() {
     .addItem("2. Configurar URLs y PIN", "configureProject")
     .addSeparator()
     .addItem("Generar códigos y enlaces", "generateGuestPasses")
+    .addItem("Generar enlaces de WhatsApp", "generateWhatsappLinks")
     .addItem("Actualizar cupos y estados", "refreshAllGuestRows")
     .addToUi();
 }

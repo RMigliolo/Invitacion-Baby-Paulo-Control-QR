@@ -12,15 +12,7 @@ const CONFIG = {
   eventDate: new Date("2026-09-26T14:00:00-06:00"),
 
   apiEndpoint:
-    "https://script.google.com/macros/s/TU_IMPLEMENTACION/exec"
-};
-
-  /*
-    Pega aquí la URL de la NUEVA implementación de Google Apps Script.
-    Debe terminar en /exec. Esta misma URL atiende personalización,
-    confirmaciones y la pantalla móvil de control de acceso.
-  */
-  apiEndpoint: "https://script.google.com/macros/s/AKfycbxEBGgYQFfmboWXpfp9Xiro_zJE2h44g_apJc9OxgghEfxb8lwaYef7NFNX7hBDOz82/exec"
+    "https://script.google.com/macros/s/AKfycbxEBGgYQFfmboWXpfp9Xiro_zJE2h44g_apJc9OxgghEfxb8lwaYef7NFNX7hBDOz82/exec"
 };
 
 const $ = (selector, context = document) => context.querySelector(selector);

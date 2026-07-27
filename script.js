@@ -6,7 +6,7 @@
 const CONFIG = {
   whatsappNumber: "52NUMERO_DEL_ORGANIZADOR",
 
-  testMode: true,
+  testMode: false,
   testWhatsappNumber: "525536737159",
 
   eventDate: new Date("2026-09-26T14:00:00-06:00"),

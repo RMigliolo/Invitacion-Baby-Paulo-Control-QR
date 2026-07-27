@@ -4,8 +4,16 @@
    CONFIGURACIÓN PRINCIPAL
    ========================================================= */
 const CONFIG = {
-  whatsappNumber: "525631064309",
+  whatsappNumber: "52NUMERO_DEL_ORGANIZADOR",
+
+  testMode: true,
+  testWhatsappNumber: "525536737159",
+
   eventDate: new Date("2026-09-26T14:00:00-06:00"),
+
+  apiEndpoint:
+    "https://script.google.com/macros/s/TU_IMPLEMENTACION/exec"
+};
 
   /*
     Pega aquí la URL de la NUEVA implementación de Google Apps Script.
@@ -415,10 +423,17 @@ function setupRsvp() {
       .join("\n");
 
     const encodedMessage = encodeURIComponent(text);
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+    const destinationNumber = CONFIG.testMode
+      ? CONFIG.testWhatsappNumber
+      : CONFIG.whatsappNumber;
+
+    const isMobile =
+      /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
     const whatsappUrl = isMobile
-      ? `https://wa.me/${CONFIG.whatsappNumber}?text=${encodedMessage}`
-      : `https://web.whatsapp.com/send?phone=${CONFIG.whatsappNumber}&text=${encodedMessage}`;
+      ? `https://wa.me/${destinationNumber}?text=${encodedMessage}`
+      : `https://web.whatsapp.com/send?phone=${destinationNumber}&text=${encodedMessage}`;
 
     const whatsappWindow = window.open("about:blank", "_blank");
     if (whatsappWindow) {

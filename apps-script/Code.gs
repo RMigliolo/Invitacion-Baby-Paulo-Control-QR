@@ -26,7 +26,11 @@ const APP = Object.freeze({
     "Enlace escáner",
     "Predicción",
     "Mensaje",
-    "Última actualización"
+    "Última actualización",
+    "Enviar por WhatsApp",
+    "Invitación enviada",
+    "Fecha de envío",
+    "Observaciones"
   ],
   LOG_HEADERS: [
     "Fecha y hora",
@@ -42,12 +46,13 @@ const APP = Object.freeze({
 function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu("Invitaciones QR")
-    .addItem("1. Preparar hojas", "setupSystem")
+    .addItem("1. Preparar o actualizar hojas", "setupSystem")
     .addItem("2. Configurar URLs y PIN", "configureProject")
     .addSeparator()
-    .addItem("Generar códigos y enlaces", "generateGuestPasses")
-    .addItem("Generar enlaces de WhatsApp", "generateWhatsappLinks")
-    .addItem("Actualizar cupos y estados", "refreshAllGuestRows")
+    .addItem("3. Generar o actualizar invitaciones", "generateGuestPasses")
+    .addItem("4. Regenerar enlaces de WhatsApp", "generateWhatsappLinks")
+    .addItem("5. Marcar fila seleccionada como enviada", "markSelectedInvitationAsSent")
+    .addItem("6. Actualizar cupos y estados", "refreshAllGuestRows")
     .addToUi();
 }
 
@@ -56,18 +61,33 @@ function onOpen() {
  */
 function setupSystem() {
   const spreadsheet = SpreadsheetApp.getActiveSpreadsheet();
-  if (!spreadsheet) throw new Error("Abre este script desde la hoja de cálculo del evento.");
+  if (!spreadsheet) {
+    throw new Error("Abre este script desde la hoja de cálculo del evento.");
+  }
 
-  PropertiesService.getScriptProperties().setProperty("SPREADSHEET_ID", spreadsheet.getId());
+  PropertiesService.getScriptProperties().setProperty(
+    "SPREADSHEET_ID",
+    spreadsheet.getId()
+  );
 
-  const guests = getOrCreateSheet_(spreadsheet, APP.GUESTS_SHEET, APP.GUEST_HEADERS);
-  const log = getOrCreateSheet_(spreadsheet, APP.ACCESS_LOG_SHEET, APP.LOG_HEADERS);
+  const guests = getOrCreateSheet_(
+    spreadsheet,
+    APP.GUESTS_SHEET,
+    APP.GUEST_HEADERS
+  );
+  const log = getOrCreateSheet_(
+    spreadsheet,
+    APP.ACCESS_LOG_SHEET,
+    APP.LOG_HEADERS
+  );
 
   guests.setFrozenRows(1);
-  guests.getRange(1, 1, 1, APP.GUEST_HEADERS.length)
+  guests
+    .getRange(1, 1, 1, APP.GUEST_HEADERS.length)
     .setFontWeight("bold")
     .setBackground("#dceef8")
-    .setFontColor("#3e4b53");
+    .setFontColor("#3e4b53")
+    .setHorizontalAlignment("center");
 
   guests.setColumnWidth(1, 130);
   guests.setColumnWidth(2, 230);
@@ -80,29 +100,52 @@ function setupSystem() {
   guests.setColumnWidth(12, 150);
   guests.setColumnWidth(13, 260);
   guests.setColumnWidth(14, 175);
+  guests.setColumnWidth(15, 190);
+  guests.setColumnWidth(16, 135);
+  guests.setColumnWidth(17, 165);
+  guests.setColumnWidth(18, 260);
+
+  const dataRows = Math.max(guests.getMaxRows() - 1, 1);
 
   const confirmationRule = SpreadsheetApp.newDataValidation()
-    .requireValueInList(["Pendiente", "Sí asistiré", "No podré asistir"], true)
+    .requireValueInList(
+      ["Pendiente", "Sí asistiré", "No podré asistir"],
+      true
+    )
     .setAllowInvalid(false)
     .build();
-  guests.getRange(2, 5, Math.max(guests.getMaxRows() - 1, 1), 1).setDataValidation(confirmationRule);
 
-  guests.getRange(2, 4, Math.max(guests.getMaxRows() - 1, 1), 1).setNumberFormat("0");
-  guests.getRange(2, 6, Math.max(guests.getMaxRows() - 1, 1), 2).setNumberFormat("0");
-  guests.getRange(2, 9, Math.max(guests.getMaxRows() - 1, 1), 1).setNumberFormat("dd/mm/yyyy hh:mm");
-  guests.getRange(2, 14, Math.max(guests.getMaxRows() - 1, 1), 1).setNumberFormat("dd/mm/yyyy hh:mm");
+  guests.getRange(2, 5, dataRows, 1).setDataValidation(confirmationRule);
+  guests.getRange(2, 16, dataRows, 1).insertCheckboxes();
+
+  // El teléfono se conserva como texto para evitar notación científica.
+  guests.getRange(2, 3, dataRows, 1).setNumberFormat("@");
+  guests.getRange(2, 4, dataRows, 1).setNumberFormat("0");
+  guests.getRange(2, 6, dataRows, 2).setNumberFormat("0");
+  guests.getRange(2, 9, dataRows, 1).setNumberFormat("dd/mm/yyyy hh:mm");
+  guests.getRange(2, 14, dataRows, 1).setNumberFormat("dd/mm/yyyy hh:mm");
+  guests.getRange(2, 17, dataRows, 1).setNumberFormat("dd/mm/yyyy hh:mm");
+  guests.getRange(2, 18, dataRows, 1).setWrap(true);
+
+  guests.getRange(2, 15, dataRows, 1)
+    .setHorizontalAlignment("center")
+    .setFontWeight("bold");
+  guests.getRange(2, 16, dataRows, 1).setHorizontalAlignment("center");
 
   log.setFrozenRows(1);
-  log.getRange(1, 1, 1, APP.LOG_HEADERS.length)
+  log
+    .getRange(1, 1, 1, APP.LOG_HEADERS.length)
     .setFontWeight("bold")
     .setBackground("#f9e5a6")
     .setFontColor("#3e4b53");
   log.autoResizeColumns(1, APP.LOG_HEADERS.length);
-  log.getRange(2, 1, Math.max(log.getMaxRows() - 1, 1), 1).setNumberFormat("dd/mm/yyyy hh:mm:ss");
+  log
+    .getRange(2, 1, Math.max(log.getMaxRows() - 1, 1), 1)
+    .setNumberFormat("dd/mm/yyyy hh:mm:ss");
 
   SpreadsheetApp.getUi().alert(
-    "Sistema preparado",
-    "Ahora despliega la aplicación web y después usa “Configurar URLs y PIN”.",
+    "Sistema actualizado",
+    "Se conservaron los invitados existentes y se agregaron las columnas de WhatsApp, envío y observaciones.",
     SpreadsheetApp.getUi().ButtonSet.OK
   );
 }
@@ -165,25 +208,45 @@ function configureProject() {
  */
 function generateGuestPasses() {
   const sheet = getGuestsSheet_();
-  const config = getRequiredConfig_();
+  const properties = PropertiesService.getScriptProperties();
+  const invitationBaseUrl = properties.getProperty("INVITATION_BASE_URL") || "";
+  const webAppUrl = properties.getProperty("WEB_APP_URL") || "";
   const lastRow = sheet.getLastRow();
 
   if (lastRow < 2) {
-    SpreadsheetApp.getUi().alert("Primero agrega invitados en la hoja Invitados.");
+    SpreadsheetApp.getUi().alert(
+      "Primero agrega invitados en la hoja Invitados."
+    );
     return;
   }
 
-  const range = sheet.getRange(2, 1, lastRow - 1, APP.GUEST_HEADERS.length);
+  const range = sheet.getRange(
+    2,
+    1,
+    lastRow - 1,
+    APP.GUEST_HEADERS.length
+  );
   const values = range.getValues();
   const existingCodes = new Set(
-    values.map(row => normalizeCode_(row[0])).filter(Boolean)
+    values.map((row) => normalizeCode_(row[0])).filter(Boolean)
   );
 
   let generated = 0;
-  values.forEach((row) => {
+  let processed = 0;
+  const skippedRows = [];
+
+  values.forEach((row, index) => {
+    const sheetRow = index + 2;
     const guestName = cleanText_(row[1], 160);
     const capacity = positiveInteger_(row[3]);
-    if (!guestName || capacity < 1) return;
+
+    // Ignora filas completamente vacías.
+    if (!guestName && !row[3]) return;
+
+    if (!guestName || capacity < 1) {
+      skippedRows.push(sheetRow);
+      return;
+    }
 
     let code = normalizeCode_(row[0]);
     if (!code) {
@@ -199,25 +262,217 @@ function generateGuestPasses() {
 
     row[0] = code;
     row[1] = guestName;
+    row[2] = cleanText_(row[2], 40);
     row[3] = capacity;
     row[4] = confirmation;
     row[5] = entered;
     row[6] = remaining;
     row[7] = status;
-    row[9] = buildInvitationUrl_(config.invitationBaseUrl, code);
-    row[10] = buildScannerUrl_(config.webAppUrl, code);
+    row[9] = invitationBaseUrl
+      ? buildInvitationUrl_(invitationBaseUrl, code)
+      : "";
+    row[10] = webAppUrl
+      ? buildScannerUrl_(webAppUrl, code)
+      : "";
     row[13] = new Date();
+
+    // Conserva las columnas P, Q y R existentes.
+    if (row[15] !== true) row[15] = false;
+
+    processed += 1;
   });
 
   range.setValues(values);
+  writeWhatsappLinks_(sheet, values);
   SpreadsheetApp.flush();
+
+  let message =
+    `${generated} código(s) nuevo(s) generado(s).\n` +
+    `${processed} invitación(es) procesada(s).`;
+
+  if (skippedRows.length) {
+    message +=
+      "\n\nFilas omitidas por falta de nombre o cupo válido: " +
+      skippedRows.join(", ");
+  }
+
+  if (!invitationBaseUrl || !webAppUrl) {
+    message +=
+      "\n\nFalta configurar una o ambas URL. Los códigos se generaron, " +
+      "pero algunos enlaces no estarán disponibles hasta ejecutar “Configurar URLs y PIN”.";
+  } else {
+    message +=
+      "\n\nJ: invitación personalizada\n" +
+      "K: escáner\n" +
+      "O: envío preparado para WhatsApp";
+  }
 
   SpreadsheetApp.getUi().alert(
     "Invitaciones actualizadas",
-    `${generated} código(s) nuevo(s) generado(s). Los enlaces están en las columnas J y K.`,
+    message,
     SpreadsheetApp.getUi().ButtonSet.OK
   );
 }
+
+/**
+ * Regenera únicamente la columna O sin modificar códigos, cupos o estados.
+ */
+function generateWhatsappLinks() {
+  const sheet = getGuestsSheet_();
+  const lastRow = sheet.getLastRow();
+
+  if (lastRow < 2) {
+    SpreadsheetApp.getUi().alert("No hay invitados para procesar.");
+    return;
+  }
+
+  const values = sheet
+    .getRange(2, 1, lastRow - 1, APP.GUEST_HEADERS.length)
+    .getValues();
+
+  writeWhatsappLinks_(sheet, values);
+  SpreadsheetApp.flush();
+
+  SpreadsheetApp.getUi().alert(
+    "Enlaces de WhatsApp actualizados",
+    "La columna O quedó preparada. Haz clic en “Enviar por WhatsApp” y, después del envío, marca la casilla de la columna P.",
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
+/**
+ * Marca como enviada la fila actualmente seleccionada y registra la fecha.
+ * Es útil después de regresar de WhatsApp Web.
+ */
+function markSelectedInvitationAsSent() {
+  const sheet = SpreadsheetApp.getActiveSheet();
+  const range = SpreadsheetApp.getActiveRange();
+
+  if (!sheet || sheet.getName() !== APP.GUESTS_SHEET || !range) {
+    SpreadsheetApp.getUi().alert(
+      "Selecciona primero una celda de la fila correspondiente en la hoja Invitados."
+    );
+    return;
+  }
+
+  const row = range.getRow();
+  if (row < 2) {
+    SpreadsheetApp.getUi().alert("Selecciona una fila de invitado, no el encabezado.");
+    return;
+  }
+
+  const guestName = cleanText_(sheet.getRange(row, 2).getValue(), 160);
+  if (!guestName) {
+    SpreadsheetApp.getUi().alert("La fila seleccionada no contiene un invitado.");
+    return;
+  }
+
+  const now = new Date();
+  sheet.getRange(row, 16).setValue(true);
+  sheet.getRange(row, 17).setValue(now);
+
+  SpreadsheetApp.getUi().alert(
+    "Invitación marcada como enviada",
+    `${guestName}\n${formatDate_(now)}`,
+    SpreadsheetApp.getUi().ButtonSet.OK
+  );
+}
+
+/**
+ * Escribe enlaces enriquecidos en la columna O.
+ */
+function writeWhatsappLinks_(sheet, values) {
+  const richTextValues = values.map((row) => {
+    const guestName = cleanText_(row[1], 160);
+    const phone = normalizeWhatsappPhone_(row[2]);
+    const capacity = positiveInteger_(row[3]);
+    const invitationUrl = String(row[9] || "").trim();
+
+    if (!guestName && !row[3]) {
+      return [SpreadsheetApp.newRichTextValue().setText("").build()];
+    }
+
+    if (!guestName) {
+      return [SpreadsheetApp.newRichTextValue().setText("Falta nombre").build()];
+    }
+
+    if (!phone) {
+      return [SpreadsheetApp.newRichTextValue().setText("Revisar teléfono").build()];
+    }
+
+    if (capacity < 1) {
+      return [SpreadsheetApp.newRichTextValue().setText("Revisar cupo").build()];
+    }
+
+    if (!invitationUrl) {
+      return [
+        SpreadsheetApp
+          .newRichTextValue()
+          .setText("Generar invitación primero")
+          .build()
+      ];
+    }
+
+    const message = buildWhatsappMessage_(
+      guestName,
+      capacity,
+      invitationUrl
+    );
+    const whatsappUrl =
+      `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+
+    return [
+      SpreadsheetApp
+        .newRichTextValue()
+        .setText("Enviar por WhatsApp")
+        .setLinkUrl(whatsappUrl)
+        .build()
+    ];
+  });
+
+  sheet
+    .getRange(2, 15, richTextValues.length, 1)
+    .setRichTextValues(richTextValues)
+    .setHorizontalAlignment("center")
+    .setFontWeight("bold");
+}
+
+function buildWhatsappMessage_(guestName, capacity, invitationUrl) {
+  const peopleText = capacity === 1 ? "1 persona" : `${capacity} personas`;
+
+  return [
+    `Hola, ${guestName} ✨`,
+    "",
+    "Con mucha alegría te compartimos tu invitación al Baby Shower de Baby Paulo.",
+    "",
+    `Tu invitación contempla un cupo de ${peopleText}.`,
+    "",
+    "Abre aquí tu invitación personalizada y presenta el código QR al llegar:",
+    invitationUrl,
+    "",
+    "Este enlace es personal. Por favor, evita compartirlo."
+  ].join("\n");
+}
+
+/**
+ * Normaliza números mexicanos y números internacionales para wa.me.
+ */
+function normalizeWhatsappPhone_(value) {
+  let digits = String(value == null ? "" : value).replace(/\D/g, "");
+
+  // Formato mexicano antiguo: 521 + 10 dígitos.
+  if (digits.startsWith("521") && digits.length === 13) {
+    digits = `52${digits.slice(3)}`;
+  }
+
+  // Número mexicano de 10 dígitos sin lada internacional.
+  if (digits.length === 10) {
+    digits = `52${digits}`;
+  }
+
+  return /^\d{11,15}$/.test(digits) ? digits : "";
+}
+
 
 function refreshAllGuestRows() {
   const sheet = getGuestsSheet_();
@@ -232,12 +487,32 @@ function refreshAllGuestRows() {
 
 function onEdit(e) {
   if (!e || !e.range) return;
+
   const sheet = e.range.getSheet();
   if (sheet.getName() !== APP.GUESTS_SHEET || e.range.getRow() < 2) return;
 
-  const editedColumn = e.range.getColumn();
-  if ([2, 4, 5, 6].includes(editedColumn)) {
-    refreshGuestRow_(sheet, e.range.getRow());
+  const startRow = e.range.getRow();
+  const rowCount = e.range.getNumRows();
+  const startColumn = e.range.getColumn();
+  const endColumn = startColumn + e.range.getNumColumns() - 1;
+
+  for (let offset = 0; offset < rowCount; offset += 1) {
+    const row = startRow + offset;
+
+    // Nombre, cupo, confirmación o ingresaron.
+    if (
+      [2, 4, 5, 6].some(
+        (column) => column >= startColumn && column <= endColumn
+      )
+    ) {
+      refreshGuestRow_(sheet, row);
+    }
+
+    // Casilla “Invitación enviada”.
+    if (16 >= startColumn && 16 <= endColumn) {
+      const sent = sheet.getRange(row, 16).getValue() === true;
+      sheet.getRange(row, 17).setValue(sent ? new Date() : "");
+    }
   }
 }
 
@@ -457,7 +732,7 @@ function getGuestRecord_(rawCode) {
     invitado: cleanText_(values[1], 160) || "Invitación sin nombre",
     telefono: cleanText_(values[2], 40),
     cupoAsignado: capacity,
-    confirmacion,
+    confirmacion: confirmation,
     ingresaron: entered,
     cupoRestante: remaining,
     estado: status,

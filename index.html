@@ -29,10 +29,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Great+Vibes&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=5">
+  <link rel="stylesheet" href="style.css?v=6">
   <!-- Genera el QR directamente en el navegador. -->
   <script src="https://cdn.jsdelivr.net/npm/qrcodejs@1.0.0/qrcode.min.js" defer></script>
-  <script src="script.js?v=3" defer></script>
+  <script src="script.js?v=4" defer></script>
 </head>
 <body>
   <div class="sky" aria-hidden="true">
@@ -247,15 +247,26 @@
           referrerpolicy="no-referrer-when-downgrade">
         </iframe>
       </div>
-      <a
-        class="btn btn-primary"
-        id="smartMapButton"
-        href="https://www.google.com/maps/search/?api=1&amp;query=19.643694%2C-99.162709"
-        target="_blank"
-        rel="noopener"
-      >
-        Abrir ubicación
-      </a>
+      <div class="map-actions" aria-label="Opciones para abrir la ubicación">
+        <a
+          class="btn btn-primary"
+          href="https://www.google.com/maps/search/?api=1&amp;query=19.643694%2C-99.162709"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Abrir Jardín Briselys en Google Maps"
+        >
+          Abrir en Google Maps
+        </a>
+        <a
+          class="btn btn-secondary"
+          href="https://maps.apple/la/rWF7QCyMd4Z-hp"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Abrir Jardín Briselys en Apple Maps"
+        >
+          Abrir en Apple Maps
+        </a>
+      </div>
     </section>
 
 

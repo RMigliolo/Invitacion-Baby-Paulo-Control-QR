@@ -64,3 +64,7 @@ Se incluyen dos botones independientes:
 - **Abrir en Apple Maps:** usa el enlace compartido `https://maps.apple/la/rWF7QCyMd4Z-hp`.
 
 El mapa incrustado conserva las mismas coordenadas, por lo que los tres accesos apuntan al mismo lugar.
+
+## Vista previa de WhatsApp
+
+La distribución ahora utiliza `compartir.html`, una página ligera que conserva el código personal y redirige a la invitación principal. Después de subir esta versión y reemplazar `Code.gs`, ejecuta **Invitaciones QR > 4. Regenerar enlaces de WhatsApp**. Consulta `INSTRUCCIONES-MEJORA-PREVIEW-WHATSAPP.md`.

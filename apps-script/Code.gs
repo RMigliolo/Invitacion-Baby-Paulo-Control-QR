@@ -11,6 +11,8 @@ const APP = Object.freeze({
   ACCESS_LOG_SHEET: "Accesos",
   CODE_PREFIX: "BP",
   CODE_LENGTH: 8,
+  SHARE_PAGE: "compartir.html",
+  PREVIEW_VERSION: "20260801",
   TIME_ZONE: "America/Mexico_City",
   GUEST_HEADERS: [
     "Código",
@@ -326,16 +328,42 @@ function generateWhatsappLinks() {
     return;
   }
 
-  const values = sheet
-    .getRange(2, 1, lastRow - 1, APP.GUEST_HEADERS.length)
-    .getValues();
+  const invitationBaseUrl =
+    PropertiesService.getScriptProperties().getProperty("INVITATION_BASE_URL") || "";
+
+  if (!invitationBaseUrl) {
+    throw new Error(
+      "Primero ejecuta “Configurar URLs y PIN” para guardar la URL de GitHub Pages."
+    );
+  }
+
+  const range = sheet.getRange(
+    2,
+    1,
+    lastRow - 1,
+    APP.GUEST_HEADERS.length
+  );
+  const values = range.getValues();
+
+  // También renueva la columna J. Esto fuerza una URL de distribución nueva
+  // y evita seguir enviando enlaces que WhatsApp pudiera tener en caché.
+  values.forEach((row) => {
+    const code = normalizeCode_(row[0]);
+    if (code) {
+      row[9] = buildInvitationUrl_(invitationBaseUrl, code);
+    }
+  });
+
+  sheet
+    .getRange(2, 10, values.length, 1)
+    .setValues(values.map((row) => [row[9] || ""]));
 
   writeWhatsappLinks_(sheet, values);
   SpreadsheetApp.flush();
 
   SpreadsheetApp.getUi().alert(
     "Enlaces de WhatsApp actualizados",
-    "La columna O quedó preparada. Haz clic en “Enviar por WhatsApp” y, después del envío, marca la casilla de la columna P.",
+    "Se renovaron la columna J y la columna O con la página ligera de vista previa. Haz clic en “Enviar por WhatsApp” y, después del envío, marca la casilla de la columna P.",
     SpreadsheetApp.getUi().ButtonSet.OK
   );
 }
@@ -784,8 +812,15 @@ function createUniqueCode_(existingCodes) {
 }
 
 function buildInvitationUrl_(baseUrl, code) {
-  const separator = baseUrl.includes("?") ? "&" : "?";
-  return `${baseUrl}${separator}codigo=${encodeURIComponent(code)}`;
+  const cleanBaseUrl = normalizeBaseUrl_(
+    String(baseUrl || "").split(/[?#]/)[0]
+  );
+
+  return (
+    `${cleanBaseUrl}${APP.SHARE_PAGE}` +
+    `?pv=${encodeURIComponent(APP.PREVIEW_VERSION)}` +
+    `#codigo=${encodeURIComponent(code)}`
+  );
 }
 
 function buildScannerUrl_(webAppUrl, code) {
